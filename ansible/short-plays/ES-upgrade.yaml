@@ -1,0 +1,9 @@
+---
+- hosts: docker_servers_external, !docker_servers_external_pods, quorum_servers_core
+  any_errors_fatal: true
+  serial: 1
+  vars:
+    vault_elastic: "{{ lookup('hashi_vault', 'secret=secret/elasticsearch/elastic token={{ hashivault_ansible_token }} url={{vault_url}} validate_certs=no') }}"
+  roles:
+    - elasticsearch-upgrade
+
