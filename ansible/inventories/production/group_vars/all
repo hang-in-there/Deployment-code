@@ -1,0 +1,88 @@
+vault_production: true
+
+ansible_python_interpreter: /usr/bin/python3
+
+datacenters: "{{ groups['platform'] | map('extract', hostvars) | map(attribute='datacenter') | unique | list }}"
+
+# these tasks publish to the local DC NATS server
+nats_dc_publishers:
+  - dns-poller
+  - health-check-ingest
+  - http-poller
+  - ipmi-poller
+  - log-db-poller
+  - metrics-ingest-alerts-jobs
+  - metrics-ingest-tsdb
+  - nomad-task-state-poller
+  - ping-poller
+  - rethinkdb-poller
+  - image-vuln
+  - health-poller-automation-api
+
+datacenters_no_core: "{{ datacenters | reject('match', 'core') | list }}"
+job_publishers: "{{ datacenters | product(nats_dc_publishers, ['METRICS_PUBLISHER']) | list }}"
+metrics_dc_core_users: "{{  datacenters_no_core | map('regex_replace', '(.*)', 'metrics-\\1-core-delivery') | list }}"
+
+
+
+# Produce a list of all dc-pod combos in a list of lists, i.e. [[dc1, pod1], [dc1, pod2], [dc2, pod1], ...]
+dc_pod_combinations: "{{ groups['docker_servers_external_pods'] | map('extract', hostvars) | map('json_query', '[datacenter,pod]') | sort | unique | list }}"
+
+
+
+#### DNS
+dns1_external: dummy.ip
+dns2_external: dummy.ip
+
+#### Application Versioning
+ansible_module_version: 2.10.0
+centos_version: 7
+nomad_version: 1.0.10
+consul_version: 1.9.9
+vault_version: 1.8.0
+influx_version: 1.9.3
+docker_version: 19.03.13-3.el7
+containerd_version: 1.3.7-3.1.el7
+storcli_version: 1.23.02-1
+elasticsearch_version: 7.15.0
+nodejs_version: v13.5.0
+telegraf_version: 1.9.4-1
+coredns_version: 1.3.1
+nginx_version: 1.20.1
+
+consul_template_version: 0.19.5
+
+envoy_version: v1.20.0
+mongodb_package_version: 4.2.5-1
+falcon_sensor_version: 6.16.0-11312.el7
+
+#### Default host and application related variables
+shared_storage: false
+artifact: false
+artifact_master: false
+artifact_syncer: false
+quorum: false
+nomad: none
+docker: none
+influx: none
+rethinkdb_environment: none
+rethinkdb_role: none
+
+vault: none
+platform_type: dc
+private_int: bond0
+
+kafka_nodes: ['1', '2', '3']
+zookeeper_nodes: ['1', '2', '3', '4', '5']
+elasticsearch_master_nodes: ['1', '2', '3']
+elasticsearch_data_nodes: ['4', '5', '6']
+
+edge_proxy: false
+dmz: false
+
+min_service_runtime: 300
+
+
+
+
+
