@@ -22,26 +22,17 @@ nats_dc_publishers:
 datacenters_no_core: "{{ datacenters | reject('match', 'core') | list }}"
 job_publishers: "{{ datacenters | product(nats_dc_publishers, ['METRICS_PUBLISHER']) | list }}"
 metrics_dc_core_users: "{{  datacenters_no_core | map('regex_replace', '(.*)', 'metrics-\\1-core-delivery') | list }}"
-core_publishers: "{{ ['core'] | product(metrics_dc_core_users, ['METRICS_PUBLISHER']) | list }}"
-dc_subscribers: "{{ datacenters_no_core | zip(metrics_dc_core_users) | product(['METRICS_SUBSCRIBER']) | map('flatten') | list }}"
-core_subscribers: [['core', 'metrics-delivery', 'METRICS_SUBSCRIBER']]
-datacenter_host_pairs: "{{ groups['platform'] | map('extract', hostvars) | map('json_query', '[datacenter,inventory_hostname_short]') | list }}"
-host_publishers: "{{ datacenter_host_pairs | product(['METRICS_PUBLISHER']) | map('flatten') | list }}"
+
+
 
 # Produce a list of all dc-pod combos in a list of lists, i.e. [[dc1, pod1], [dc1, pod2], [dc2, pod1], ...]
 dc_pod_combinations: "{{ groups['docker_servers_external_pods'] | map('extract', hostvars) | map('json_query', '[datacenter,pod]') | sort | unique | list }}"
 
-appneta_north_south: [
-   {location: "Tokyo, Tokyo - IBM-POC-AP-JPNE-TKYO", appneta_cloud_endpoint: 20.47.101.20, ibm_datacenters: [tok02, tok04, tok05]},
-   {location: "Sydney, New South Wales - IBM-POC-AUS-East-SYD", appneta_cloud_endpoint: 20.47.122.16, ibm_datacenters: [syd01, syd04, syd05]},
-   {location: "Frankfurt, Hessen - IBM-POC-DE-FRA", appneta_cloud_endpoint: 20.47.112.22, ibm_datacenters: [fra02, fra04,fra05]},
-   {location: "São Paulo, State of São Paulo - IBM-POC-SA-South-SP", appneta_cloud_endpoint: 20.195.162.71, ibm_datacenters: [sao01, sao04,sao05]},
-   {location: "San Antonio, Texas - IBM-POC-US-SouthCentral", appneta_cloud_endpoint: 20.47.69.10, ibm_datacenters: [dal05, dal06, dal09, dal10, dal12, dal13]}
-]
+
 
 #### DNS
-dns1_external: 10.0.80.11
-dns2_external: 10.0.80.12
+dns1_external: dummy.ip
+dns2_external: dummy.ip
 
 #### Application Versioning
 ansible_module_version: 2.10.0
@@ -58,9 +49,9 @@ nodejs_version: v13.5.0
 telegraf_version: 1.9.4-1
 coredns_version: 1.3.1
 nginx_version: 1.20.1
-nginx_sha256: E462E11533D5C30BAA05DF7652160FF5979591D291736CFA5EDB9FD2EDB48C49
+
 consul_template_version: 0.19.5
-consul_template_sha256: e6b376701708b901b0548490e296739aedd1c19423c386eb0b01cfad152162af
+
 envoy_version: v1.20.0
 mongodb_package_version: 4.2.5-1
 falcon_sensor_version: 6.16.0-11312.el7
@@ -76,440 +67,22 @@ docker: none
 influx: none
 rethinkdb_environment: none
 rethinkdb_role: none
-pdns: false
+
 vault: none
 platform_type: dc
 private_int: bond0
-backend_internal_cidr: 10.0.0.0/8
-public_int: bond1
-controller: false
-dockerpod: false
+
 kafka_nodes: ['1', '2', '3']
 zookeeper_nodes: ['1', '2', '3', '4', '5']
 elasticsearch_master_nodes: ['1', '2', '3']
 elasticsearch_data_nodes: ['4', '5', '6']
-ldap_master_nodes: "[{% for item in groups['quorum_servers'] %}{% if hostvars[item]['directory_server_role'] is defined and hostvars[item]['directory_server_role'] == 'master' %}'{{ hostvars[item]['inventory_hostname_short'] }}',{% endif %}{% endfor %}]"
-ldap_consumer_nodes: "[{% for item in groups['quorum_servers'] %}{% if hostvars[item]['directory_server_role'] is defined and hostvars[item]['directory_server_role'] == 'consumer' %}'{{ hostvars[item]['inventory_hostname_short'] }}',{% endif %}{% endfor %}]"
-ldap_primary_master: "{% for item in groups['quorum_servers'] %}{% if hostvars[item]['ldap_primary'] is defined and hostvars[item]['ldap_primary'] == 'true' %}{{ hostvars[item]['inventory_hostname_short'] }}{% endif %}{% endfor %}"
+
 edge_proxy: false
 dmz: false
-public_domain: 'loberathebeara.com'
+
 min_service_runtime: 300
-elasticsearch_retention: 365d
 
-#### Port variables
-syslog_listener_job_port: 1514
 
-# sysctl values for docker servers (pdns_servers overrides this)
-net_core_rmem_max: 8388608
-net_core_rmem_default: 8388608
 
-#### User and Group variables
-users: [{firstname: 'Samuel', lastname: 'Lilly', name: 'slilly', uid: '2003'},
-        {firstname: 'Brook', lastname: 'Heimbaugh', name: 'bheimbaugh', uid: '2005'},
-        {firstname: 'Elizabeth', lastname: 'Maddox', name: 'emaddox', uid: '2007'},
-        {firstname: 'Nathan', lastname: 'Newton', name: 'nnewton', uid: '2010'},
-        {firstname: 'Caleb', lastname: 'McCarthy', name: 'cmccarthy', uid: '2011'},
-        {firstname: 'Jason', lastname: 'Harbin', name: 'jharbin', uid: '2017'},
-        {firstname: 'John', lastname: 'Mullins', name: 'jmullins', uid: '2018'},
-        {firstname: 'Ilia', lastname: 'Rassadin', name: 'irassadin', uid: '2019'},
-        {firstname: 'Irfan', lastname: 'Sayed', name: 'isayed', uid: '2027'},
-        {firstname: 'Sreenivas', lastname: 'Devalla', name: 'sdevalla', uid: '2300'},
-        {firstname: 'Priyalakshmi', lastname: 'Gopalswamy', name: 'priyaprabhu', uid: '2302'},
-        {firstname: 'Silpa', lastname: 'Akkina', name: 'sakkina', uid: '2303'},
-        {firstname: 'Tariq', lastname: 'Khan', name: 'tkhan', uid: '2029'},
-        {firstname: 'Shashank', lastname: 'Pachava', name: 'spachava', uid: '2030'},
-        {firstname: 'Gagan', lastname: 'D', name: 'gd', uid: '2032'},
-        {firstname: 'Christopher', lastname: 'Duesman', name: 'cduesman', uid: '2033'},
-        {firstname: 'Gokilavani', lastname: 'Dhanaraj', name: 'gdhanaraj', uid: '2034'},
-        {firstname: 'Swarna', lastname: 'Mishra', name: 'swmishra', uid: '2035'},
-        {firstname: 'Rajender', lastname: 'Avasarala', name: 'ravasarala', uid: '2036'},
-        {firstname: 'Venkat', lastname: 'Tanikella', name: 'vtanikella', uid: '2037'},
-        {firstname: 'Ansel', lastname: 'Gaddy', name: 'agaddy', uid: '2038'},
-        {firstname: 'Nathanael', lastname: 'Rogers', name: 'narogers', uid: '2039'},
-        {firstname: 'Muthu', lastname: 'Vaithilingam', name: 'mvaithilingam', uid: '2040'},
-        {firstname: 'Epameinondas', lastname: 'Chatziathanasiou', name: 'echatziathanasiou', uid: '2041'},
-        {firstname: 'Arifur', lastname: 'Rahman', name: 'arahman', uid: '2042'},
-        {firstname: 'Said', lastname: 'van de Klundert', name: 'svandeklundert', uid: '2043'},
-        {firstname: 'Sridhararao', lastname: 'Kothe', name: 'skothe', uid: '2044'},
-        {firstname: 'Venkat', lastname: 'Gonthireddi', name: 'vgonthireddi', uid: '2045'},
-        {firstname: 'Lakshmi', lastname: 'Nuvvuri', name: 'lnuvvuri', uid: '2046'},
-        {firstname: 'Narem', lastname: 'Reddy', name: 'nreddy', uid: '2047'},
-        {firstname: 'Dev Kumar', lastname: 'Pal', name: 'dpal', uid: '2048'},
-        {firstname: 'Madhu', lastname: 'Potadar', name: 'mpotadar', uid: '2049'},
-        {firstname: 'Lakshmisha', lastname: 'K P', name: 'lakp', uid: '2050'},
-        {firstname: 'Kshitij Singh', lastname: 'Rathore', name: 'krathore', uid: '2051'},
-        {firstname: 'EJ', lastname: 'Thompson', name: 'cthompson', uid: '2052'},
-        {firstname: 'Trae', lastname: 'Santiago', name: 'tsantiago', uid: '2053'},
-        {firstname: 'Laura', lastname: 'Matos', name: 'lamatos', uid: '2054'},
-        {firstname: 'Eileen', lastname: 'Liu', name: 'eliu', uid: '2055'},
-        {firstname: 'Neeraj', lastname: 'Sharma', name: 'nesharma', uid: '2056'},
-        {firstname: 'Gireesh', lastname: 'Madaka', name: 'gmadaka', uid: '2057'},
-        {firstname: 'Chandra', lastname: 'Sekhar P', name: 'csekhar', uid: '2058'},
-        {firstname: 'Ganesh', lastname: 'Ram', name: 'gram', uid: '2059'},
-        {firstname: 'Gagan', lastname: 'Deep', name: 'gdeep', uid: '2060'},
-        {firstname: 'Prabhu', lastname: 'Seshachellam', name: 'pseshachellam', uid: '2061'},
-        {firstname: 'Sai', lastname: 'Chetan G', name: 'saig', uid: '2062'},
-        {firstname: 'Amit', lastname: 'Saxena', name: 'asaxena', uid: '2063'},
-        {firstname: 'Sonali', lastname: 'Juneja', name: 'sjuneja', uid: '2065'},
-        {firstname: 'Dev', lastname: 'Priya', name: 'dpriya', uid: '2066'},
-        {firstname: 'Girish', lastname: 'Moore', name: 'mreddy', uid: '2067'},
-        {firstname: 'Amarnatha', lastname: 'Donapati', name: 'domr', uid: '2068'},
-        {firstname: 'Punith', lastname: 'Jagadisha', name: 'pjagadisha', uid: '2069'},
-        {firstname: 'Sudhakar', lastname: 'Yeluru', name: 'syeluru', uid: '2070'},
-        {firstname: 'Venkatesh', lastname: 'Reddy', name: 'venreddy', uid: '2071'},
-        {firstname: 'Venugopal', lastname: 'Bedapalli', name: 'vbedapalli', uid: '2072'},
-        ]
-readonly_users: []
-pdns_users: [{firstname: 'Private DNS', lastname: 'Readonly', name: 'pdnsro', uid: '2200'},
-             {firstname: 'Private DNS', lastname: 'Admin', name: 'pdnsadmin', uid: '2201'},
-             ]
-netbw_users: [{firstname: 'Christopher', lastname: 'Raymond', name: 'craymond', uid: '2212'},
-              {firstname: 'Rohit', lastname: 'Parthasarathy', name: 'rparthasarathy', uid: '2213'},
-              {firstname: 'Bodi', lastname: 'Li', name: 'bli', uid: '2214'},
-              {firstname: 'Stephen', lastname: 'Johnson', name: 'sjohnson', uid: '2215'},
-             ]
-aiops_users: [{firstname: 'AIOps', lastname: 'Readonly', name: 'aiopsro', uid: '2220'},
-              {firstname: 'AIOps', lastname: 'Admin', name: 'aiopsadmin', uid: '2221'},
-             ]
-ssot_users: [{firstname: 'Chowdhury', lastname: 'Masood', name: 'cmasood', uid: '2301'},
-             {firstname: 'Pavan', lastname: 'Pulijala', name: 'ppulijala', uid: '2304'},
-             ]
-aiopsnetwork_users: [{firstname: 'Bruno', lastname: 'Wassermann', name: 'bwassermann', uid: '2401'},
-             {firstname: 'David', lastname: 'Ohana', name: 'dohana', uid: '2402'},
-             {firstname: 'Eran', lastname: 'Raichstein', name: 'eraichstein', uid: '2403'},
-             {firstname: 'Robert', lastname: 'Shahla', name: 'rshahla', uid: '2404'},
-             {firstname: 'Aditya', lastname: 'CS', name: 'acs', uid: '2405'},
-             {firstname: 'Ulrich', lastname: 'Finkler', name: 'ufinkler', uid: '2406'},
-             ]
-admins: ['emaddox', 'bheimbaugh', 'slilly', 'jharbin', 'isayed', 'sdevalla', 'priyaprabhu', 'sakkina', 'tkhan', 'spachava', 'cduesman', 'gdhanaraj', 'swmishra', 'ravasarala', 'nesharma', 'gmadaka', 'eliu', 'cmccarthy', 'nnewton', 'asaxena', 'mreddy', 'domr', 'gd', 'syeluru', 'vbedapalli']
-pdns_admins: ['pdnsadmin']
-netbw_admins: ['craymond', 'rparthasarathy', 'bli']
-aiops_admins: ['aiopsadmin']
-ssot_admins: ['cmasood', 'ppulijala']
-aiopsnetwork_admins: ['bwassermann', 'dohana', 'eraichstein', 'rshahla', 'acs', 'ufinkler']
-expired_users: [{firstname: 'Mariela', lastname: 'Nava', name: 'mnava', uid: '2013'},
-                {firstname: 'Jonathan', lastname: 'Mejia', name: 'jomejia', uid: '2014'},
-                {firstname: 'Ravi', lastname: 'Amanaganti', name: 'ramanaganti', uid: '2100'},
-                {firstname: 'Harshit', lastname: 'Bhattaram', name: 'hbhattaram', uid: '2023'},
-                {firstname: 'Christopher', lastname: 'Auston', name: 'causton', uid: '2009'},
-                {firstname: 'Justin', lastname: 'Gray', name: 'jgray', uid: '2000'},
-                {firstname: 'Bibi', lastname: 'Zia', name: 'bzia', uid: '2022'},
-                {firstname: 'Kyle', lastname: 'Lafkoff', name: 'klafkoff', uid: '2008'},
-                {firstname: 'Shaun', lastname: 'StJohn', name: 'sjohn', uid: '2028'},
-                {firstname: 'Network Bandwidth', lastname: 'Readonly', name: 'netbwro', uid: '2210'},
-                {firstname: 'Network Bandwidth', lastname: 'Admin', name: 'netbwadmin', uid: '2211'},
-                {firstname: 'Richard', lastname: 'Giliam', name: 'rgiliam', uid: '2004'},
-                {firstname: 'David', lastname: 'Richey', name: 'drichey', uid: '2001'},               
-                {firstname: 'Scott', lastname: 'Heuer', name: 'sheuer', uid: '2015'},
-                {firstname: 'Joe', lastname: 'Morris', name: 'josmorris', uid: '2016'},
-                {firstname: 'Chandra', lastname: 'Sekhar P', name: 'cp', uid: '2058'},
-                {firstname: 'Veera', lastname: 'Reddy', name: 'pmr1', uid: '2064'},
-                {firstname: 'Isaac', lastname: 'Velando', name: 'ivelando', uid: '2002'},
-                {firstname: 'Venkatesh', lastname: 'Reddy', name: 'vreddy', uid: '2305'},
-                {firstname: 'Venkat', lastname: 'Nagaraju', name: 'vnagaraju', uid: '2306'},
-                {firstname: 'Raja Charan', lastname: 'A', name: 'ra', uid: '2031'},
-               ]
-maintenance_uid: 1502
-rescue_uid: 1503
-saltcli_uid: 1504
-vulnscan_uid: 1505
-nomad_uid: 3000
-consul_uid: 3001
-vault_uid: 3002
-influxdb_uid: 3004
-telegraf_uid: 3005
-cp_kafka_users: [{name: 'cp-kafka', uid: '3009', home: '/data/kafka'},
-                 {name: 'cp-kafka-connect', uid: '3010', home: '/tmp'},
-                ]
-elasticsearch_uid: 3011
-nginx_uid: 3013
-envoy_uid: 3014
-coredns_pdns_uid: 3015
-rethinkdb_uid: 3016
-vsftpd_uid: 3017
-replication_uid: 3018
-nomad_gid: 3000
-consul_gid: 3001
-vault_gid: 3002
-docker_gid: 3003
-influxdb_gid: 3004
-telegraf_gid: 3005
-confluent_gid: 3006
-elasticsearch_gid: 3011
-platform_gid: 3012
-nginx_gid: 3013
-envoy_gid: 3014
-coredns_pdns_gid: 3015
-rethinkdb_gid: 3016
-vsftpd_gid: 3017
-nettools_gid: 2000
-nettoolsadmins_gid: 2001
-readonly_gid: 2002
-pdns_gid: 2003
-pdnsadmin_gid: 2004
-netbw_gid: 2005
-netbwadmin_gid: 2006
-aiops_gid: 2007
-aiopsadmin_gid: 2008
-ssot_gid: 2009
-ssotadmin_gid: 2010
-aiopsnetwork_gid: 2011
-aiopsnetworkadmin_gid: 2012
-nomadvault_token: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          62336431343631386239396635663231636366343538333339383538623461383135623238323635
-          3931633666303930303035303734313266383164613036630a383030623139386131623233373163
-          30613164316338346539623862356232393538653939333861653433643065663266666562306266
-          6538363632373030380a383266616161373463336464363834326361393461346536366238303262
-          61323938323461646438616364613861616235373734356531386565366564656632353832386437
-          3236343539613931663264323933383035666334306662613935
 
-maintenance_user_password: !vault |
-          $ANSIBLE_VAULT;1.2;AES256;dev
-          34353739643633393062653932653739616338653161613731323536623631396232346337666136
-          3839326337313961343762303430326231353638633263320a303764656462393838346130643735
-          30306463343131306366323964656266313561623931663261666532386662313930393461663264
-          3330633234343132630a343731613566333333613831353466306264313263393632653863383663
-          64636563633262353630663536653632366561396339346162393764326333663332366234383839
-          6234346134666530356266346431663731633634643865376530
 
-saltcli_user_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          31366365383231373261633733323862336530333130323666363631633634306161373437316165
-          3962383033383739656264626237646563323238363031650a363134373738353036623762643063
-          38396631656562383766396565323163633130663364346362653332613331356663653663396238
-          6234353964323637360a373530353131303030613138323234373130333630613431343836306461
-          64366136373333383933333263643761303338636363363166363639303931306664383265376661
-          36666131666537633637396634343032373138353238336665366261393662393436333937623431
-          62313665383733383662383639346432363061666637383834343032663233646265646132646131
-          66646138626162643237396434613739613936383635663964353031656231653766643232323634
-          65316661313835316165336637313738313063396637316361323161303531656636
-
-ldap_manager_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66313436316230313166613365396538373665656366356634323361376436336661643332616165
-          3761353262336137353365613937326333323133663839640a613138393963303737333934336430
-          34663234353465633964646436616434613637663838386266396434343930633934666234313865
-          6638383635306539360a636135313030626462663232393533646361376533316132633830633461
-          6538
-
-ldap_replication_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          37346239396633373166396162383066313664336230356230333636343830356230626430313038
-          6233396230663932373833306636623238333335613330330a393734653033356233666666653839
-          64316163616437306666363063326635666261626334356532363332383630373034346564386132
-          6261313335306539660a313133323239613364346566613337663533346431393331373061313465
-          3737
-
-ldap_keystore_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          34336435313235323364303736373939356333633433653230333933393863356236306333623131
-          3237653165396632323932636434396332616439613338310a316163323664353630316234356364
-          31363466303661633233636561366661366332633737333632363466663465643532613439333132
-          6637306164303630340a643939333535373337396430303762333638333661643434376662313261
-          31336633613566363032356563313335376566393162663662663466353861353536
-
-ldap_key_export_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          37613632363564333939353465656664356665373830333238313435313634623062326632323737
-          6663643333393066323632323733393962343833626134390a656432366639373735333161373837
-          36306566396532613630636432366561623431396333653262346335306363383532613464353462
-          3232386662343638350a653733646237666235383730323464643132636662636566333730623937
-          6264
-
-initial_user_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66303934313664663637623434366362396234373734646331336435323534613061333431316663
-          3539636363626562666662656362376139323563356532610a613233373834363038363037373361
-          37376334386132373236366131393535323062643631383333346533346562306433333363333434
-          3162643565306239620a643639376362646431663638613030616663373234643064323962663138
-          36396336323363666130333066326630636439353661306539316364363836393233343466363061
-          62323639666661363434333539353562663666353564383662376138656661356636343930353863
-          396161663738383463353039316538363736
-
-rescue_user_password: !vault |
-          $ANSIBLE_VAULT;1.2;AES256;dev
-          61323032613836356463326130363037333935633439343837363938653533376664633037653730
-          3131373361313132396632303762333139363866336362660a353764393465623230383066346431
-          35623836643061653637646336363036653731316132363132613837373766643966373439323636
-          3937633264303939630a396538326433363737363234326438646432646131316137656264643633
-          31656436326337356637626163373539343162623033343666643831616565646132373261613938
-          6337363962633431636337626561653536643632306162393762
-
-consul_encryption_key: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          39396435643765653562356539306239653135363838663338613363333462383262316662383630
-          3835303338643031363938633133366138653561326234370a613562336336343862343238633566
-          37616261306666373230313034343832386361623862623534326165656635366338666535343631
-          3635633738343439310a376532336237633131636538366434633838326363313730393931356430
-          38646361633239393939316333613564353430326434363433393933316635353739
-
-nomad_encryption_key: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          65323830663538623165373731646562626638346234636632623938303561323062363764333063
-          6663323761313063336337316564323838343234653837390a393731393937616131306536376637
-          62383831386266386566303137366139326164353862363264656638356261383861303163376230
-          3130616461646261360a336133393737343666386366343163653133653135373739323436626635
-          64633866313933313562326634636664306630336663626135653865333039313566
-
-softlayer_ldap_password: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66663265343736323932396365666634343537393264306337656464356564313033366231316266
-          6430383136366637323432366533353733333432626132390a313434653739373766303731333135
-          32366639636238663332393966366239356462373763623234666566643765393030653637346535
-          6137363531626138300a313938306164623866393236366266346264653232343563366536343834
-          33613935393730653234373566386331633935613138306565666137373435396163
-
-crowdstrike_customer_id: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          61666163333437333662353639643633333735643830656464643033373835613663363965623136
-          3262646132316666666131653265373536373766393764660a393338363430323638633334393766
-          62353937616437316232666266356430313963663230623037343533663235663338633635393261
-          3536613636643661650a663736346566306261636535623330363931353335303939613937336536
-          62336466663939653332323033393036653364623134316461613065396233373135353163633130
-          6463626333303633353234333338373465636432306434626533
-
-crowdstrike_tags: UT15/153QH,C_CODE/softlayer_network,AV/YES,OWNER/5J1833897,UPDATES/PROD
-
-#### NTP Servers
-ntp_servers:
-  time.service.networklayer.com: iburst prefer
-
-#### VAULT VARS
-vault_url: https://vault.service.core.consul:8200
-vault_security: https
-
-#### REPO VARS
-repo_type: softlayer
-create_gpg_key: false
-
-#### VAULT PKI
-# Apple has deemed that TTLs over 825 days are invalid
-# https://support.apple.com/en-us/HT210176
-# On macOS 10.15 on Chrome this manifests as a "NET::ERR_CERT_REVOKED" error which is unhelpful.
-application_cert_ttl: "19800h"
-platform_bootstrap: false
-createrootca: false
-createplatformintca: false
-createipmiintca: false
-cert_authorities: [{name: 'pki'},
-                   {name: 'pki_platform'},
-                   {name: 'pki_ipmi'}
-                  ]
-
-#### PLATFORM CERT TOP DIRECTORY
-server_cert_dir: '/etc/certs/pki'
-
-#### VAULT ROLES
-update_platform_cert_role: false
-update_platform_generic_cert_role: false
-update_platform_rootca_cert_role: false
-update_ldap_cert_role: false
-update_ipmi_cert_role: false
-update_cicd_master_cert_role: false
-update_nomad_token_role: false
-update_ansible_token_role: false
-update_server_token_role: false
-
-#### VAULT TOKENS
-create_ansible_token: false
-create_nomad_token: false
-create_user_token: false
-create_server_token: false
-
-#### VAULT SECRETS
-update_kafka_zookeeper_secrets: false
-update_influxdb_cluster_secrets: false
-update_tsdb_self_monitoring_secrets: false
-update_metrics_dashboard_self_monitoring_secrets: false
-update_rethinkdb_secrets: false
-update_elasticsearch_secrets: false
-update_ldap_secrets: false
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_key_one
-hashivault_key_one: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          38626131323234633066383032393539353130333230643561633037363433333664363261656630
-          3631646339643963633838326630383462646134383239380a393434626136386339383266653831
-          34653431653538343161346632386234323237643664366639346131333530376439656461303930
-          3564373536366638320a613538303439383430333666383039626432386662623438636537353732
-          62343436333263393363653034376365313936303839613763636131363832643566386533663466
-          62623066613763626163373261363165613766366262383233363436323932306232646631663263
-          34363439636164343335373839643233616638346662326263323732623136663932363933373638
-          38383663366133613337
-# END ANSIBLE MANAGED BLOCK hashivault_key_one
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_key_two
-hashivault_key_two: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          35643334653236386134356166646537646364663136306139323336643361636436623764333038
-          3362393139323134616263653865616630313864373133340a316537306332626466393533393632
-          62343730353534313866353338386162346237633339623535313432313830363239326365333732
-          6639643262333330330a323166643530333335336236653463313664303661363339633962316138
-          33623461363165383438666137323230323731613532386661326563616430333938363338376630
-          66346335373363653665336661623435383330636430343862616437306362346431313338316137
-          64303636646461323666346436323133343139363730353535396637636662383430366233623034
-          38343838306131623564
-# END ANSIBLE MANAGED BLOCK hashivault_key_two
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_key_three
-hashivault_key_three: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66396137373132616331303564383364333335363564373263316564316634663132623266616634
-          6436613863356264613664373363623834616532666161610a353463646461383632336663373439
-          37373330376237316332633230373237373833376333626465393936326331346432316266386664
-          6166333334623061380a323737333636306365656266626536653138396463653037386134376531
-          32613061646234356538303264636164393638393032646534343930383332363866336233366166
-          31326132376663313033386138623731373733383232653262383565653361343062653433313664
-          38643834626536303135663732656636646333333563656135356333336630333238333638643437
-          61396266613033323030
-# END ANSIBLE MANAGED BLOCK hashivault_key_three
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_key_four
-hashivault_key_four: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66343864633337333864376632343238616363303936383933666265336439343930653861366131
-          3632666336316234303634333332626261643239643731380a306135633734303564333561313039
-          64393639653630303163333334396232356133373433313430653030613835636664356230636437
-          3831316236653861390a643436643062313562303530366239626237646465633764666263643166
-          32663062663931613930393533616637393235313366653262356437316438336261306235306131
-          37636466366634353537613866613663363563373030386239383934383061393935653866393039
-          36353561653531316131616165333166616336316630396262663839373738613132646135386139
-          32393338636465303365
-# END ANSIBLE MANAGED BLOCK hashivault_key_four
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_key_five
-hashivault_key_five: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          39653761376166336161326631663665643331383633663264666139333338306236363936623039
-          3765663434663738333438656130653361303539363231340a336436653530303939663136363836
-          31323434646239613438353361386662386566613837616434613064393564353265313530633930
-          3463396262336436660a393766376264613062623638343966636662653833373564633233663264
-          62373830333532303737313766356365313339323162373239303964306332636434346331303039
-          38663436323430323738653239323431346339303331333436353763666137356430353034353636
-          34383534653536323033336430306337656537653434623866336230306562326663303734383333
-          66646338666334366232
-# END ANSIBLE MANAGED BLOCK hashivault_key_five
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_ansible_token
-hashivault_ansible_token: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          39363338396263373734613364363735343530626566386438386437366634386336303937326462
-          3333666435643235643238346164613032383065333865640a623364393264343232633361393130
-          62303337623461323965343861656462323430636166323032303162313630363466396539336632
-          3563383462326137330a653438393062383030343161306438356366613462333865393634303030
-          39333535653761393761613935393338656264306536363138623637313866393862
-# END ANSIBLE MANAGED BLOCK hashivault_ansible_token
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_nomad_token
-hashivault_nomad_token: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          39623163623163393962663337633764653265313631363363313938613031306135643364393135
-          6435336532356436383961626230626434366234656437620a363466353234633438313661653431
-          65643033303565303137623232656630623761303938623862363864613563383337623636613039
-          3438646364313131640a373566623161303534643564616632373839646336623736333139313535
-          34356334366535333762373531633464353738303039646135353531326138636366
-# END ANSIBLE MANAGED BLOCK hashivault_nomad_token
-# BEGIN ANSIBLE MANAGED BLOCK hashivault_server_token
-hashivault_server_token: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          66623131356535326466356430333530336430316237636362633935386466313762616131363533
-          6262656431356337326431313737323732353366656535330a366135386430633830656639623534
-          30343764363436333635313232363336343435356466376462386137613131373065353631363133
-          3164336639323066340a303136326531376264306333643931376266313862363431646239393565
-          62633363373531356330623438623230633735396363363963326332333132623561
-# END ANSIBLE MANAGED BLOCK hashivault_server_token
