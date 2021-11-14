@@ -1,0 +1,34 @@
+---
+
+  - name: Gracefully shut down Elasticsearch
+    block:
+
+    - name: Disable shard allocation; try for up to two minutes
+      uri:
+        url: "https://log-db-master-self-monitoring.service.{{ datacenter }}.consul:9202/_cluster/settings"
+        validate_certs: no
+        method: PUT
+        user: "{{ vault_elastic.user }}"
+        password: "{{ vault_elastic.password }}"
+        force_basic_auth: yes
+        body:
+          persistent:
+            cluster.routing.allocation.enable: "none"
+        body_format: json
+        status_code: 200
+      register: result
+      until: result.status == 200
+      delegate_to: localhost
+      delay: 10
+      retries: 12
+
+    - name: Stop Elasticsearch
+      systemd:
+        name: elasticsearch
+        state: stopped
+        daemon_reload: yes
+
+    when:
+      - (docker == "server" and inventory_hostname_short | regex_replace('.*[0-9]([0-9])i?$', '\\1') in elasticsearch_data_nodes + elasticsearch_master_nodes) or
+        (quorum == true and datacenter == "core")
+

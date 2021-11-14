@@ -1,0 +1,28 @@
+---
+
+  - name: Perform Elasticsearch upgrade
+    block:
+
+    - name: Install Elasticsearch
+      dnf:
+        name: "/tmp/elasticsearch-{{ elasticsearch_version }}.rpm"
+        state: present
+      vars:
+        ansible_python_interpreter: /usr/bin/python2
+
+    - name: Remove default data dir
+      file:
+        path: /var/lib/elasticsearch
+        state: absent
+
+    - name: Remove default Java installation that comes with ES
+      file:
+        path: /usr/share/elasticsearch/jdk/
+        state: absent
+      tags: remove_elasticsearch_jdk 
+
+    when:
+      - (docker == "server" and inventory_hostname_short | regex_replace('.*[0-9]([0-9])i?$', '\\1') in elasticsearch_data_nodes + elasticsearch_master_nodes) or
+        controller == true or
+        (quorum == true and datacenter == "core")
+

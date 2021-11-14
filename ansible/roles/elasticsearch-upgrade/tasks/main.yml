@@ -1,0 +1,7 @@
+---
+- include_tasks: 01_stage_upgrade.yml
+- include_tasks: 02_graceful_shutdown.yml
+- include_tasks: 03_upgrade.yml
+  tags: remove_elasticsearch_jdk
+- include_tasks: 04_graceful_startup.yml
+- include_tasks: 05_elasticsearch_role_upgrade.yml

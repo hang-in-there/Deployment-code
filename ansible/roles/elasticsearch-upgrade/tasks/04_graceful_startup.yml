@@ -1,0 +1,82 @@
+---
+
+  - name: Gracefully bring up Elasticsearch
+    block:
+
+    - name: Set ownership of /etc/elasticsearch to allow ES to create a temp file
+      file:
+        path: /etc/elasticsearch
+        mode: 02770
+        owner: root
+        group: elasticsearch
+        seuser: system_u
+        serole: object_r
+        setype: etc_t
+        selevel: s0
+    - name: Upgrade Elasticsearch Configuration file
+      template:
+        src: "../../elasticsearch-cluster/templates/elasticsearch/{{ item }}.j2"
+        dest: "/etc/elasticsearch/{{ item }}"
+        owner: root
+        group: elasticsearch
+        mode: 0640
+        seuser: system_u
+        serole: object_r
+        setype: etc_t
+        selevel: s0
+      with_items:
+        - elasticsearch.yml
+
+    - name: Start Elasticsearch
+      systemd:
+        name: elasticsearch
+        state: started
+        daemon_reload: yes
+
+    - name: Enable shard allocation; try for up to two minutes
+      uri:
+        url: "https://log-db-master-self-monitoring.service.{{ datacenter }}.consul:9202/_cluster/settings"
+        validate_certs: no
+        method: PUT
+        user: "{{ vault_elastic.user }}"
+        password: "{{ vault_elastic.password }}"
+        force_basic_auth: yes
+        body:
+          persistent:
+            cluster.routing.allocation.enable: null
+        body_format: json
+        status_code: 200
+      register: result
+      until: result.status == 200
+      delegate_to: localhost
+      delay: 10
+      retries: 12
+
+    - name: Wait for the Elasticsearch port to come up
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 9202
+        state: started
+        delay: 10
+        timeout: 300
+
+    - name: Wait for cluster to recover; keep checking for up to an hour
+      uri:
+        url: "https://{{ ansible_host }}:9202/_cat/health"
+        validate_certs: no
+        method: GET
+        user: "{{ vault_elastic.user }}"
+        password: "{{ vault_elastic.password }}"
+        force_basic_auth: yes
+        status_code: 200
+        return_content: yes
+      delegate_to: localhost
+      register: health
+      until: health.content.find("green") != -1
+      delay: 10
+      retries: 360
+
+    when:
+      - (docker == "server" and inventory_hostname_short | regex_replace('.*[0-9]([0-9])i?$', '\\1') in elasticsearch_data_nodes + elasticsearch_master_nodes) or
+        (quorum == true and datacenter == "core")
+

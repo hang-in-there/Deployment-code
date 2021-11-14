@@ -1,0 +1,55 @@
+---
+
+  - name: Role upgrade for Elasticsearch
+    block:
+
+    - name: Confirm Cluster In Healthy State
+      uri:
+        url: "https://{{ ansible_host }}:9202/_cat/health"
+        validate_certs: no
+        method: GET
+        user: "{{ vault_elastic.user }}"
+        password: "{{ vault_elastic.password }}"
+        status_code: 200
+        return_content: yes
+        force_basic_auth: yes
+      delegate_to: localhost
+      register: health
+      until: health.content.find("green") != -1
+      delay: 30
+      retries: 120
+
+    - name: Setup roles needed by Oculus platform and users
+      uri:
+        url: "https://{{ ansible_host }}:9202/_security/role/{{ item }}"
+        validate_certs: no
+        method: POST
+        user: "{{ vault_elastic.user }}"
+        password: "{{ vault_elastic.password }}"
+        body: "{{ lookup('file', '../../elasticsearch-cluster/files/' + item + '.role' ) }}"
+        body_format: json
+        status_code: 200
+        force_basic_auth: yes
+      register: result
+      until: result.status == 200
+      retries: 3
+      delay: 5
+      delegate_to: localhost
+      loop:
+        - elastalert_oculus
+        - logstash_oculus
+        - monitor_user
+        - nettools_admin
+        - pdns_admin
+        - pdns_user
+        - aiops_admin
+        - aiops_user
+        - ssot_admin
+        - ssot_user
+        - aiopsnetwork_admin
+        - aiopsnetwork_user
+
+      no_log: true
+
+    when:
+      - (docker == "server" or (quorum == true and datacenter == "core")) and inventory_hostname_short | regex_replace('.*[0-9]([0-9])i?$', '\\1') in ['1']
